@@ -1,7 +1,5 @@
-import enum
 import logging
 from logging import Formatter, FileHandler
-from typing import List
 
 import babel
 import dateutil.parser
@@ -34,7 +32,10 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-
+    website = db.Column(db.String(120))
+    seeking_talent = db.Column(db.Boolean, default=False)
+    seeking_description = db.Column(db.String(120))
+    genres = db.Column(db.String(120))
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -228,15 +229,20 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
-
-    # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-    return render_template('pages/home.html')
+    data = request.form
+    try:
+        venue = get_form_venue(data)
+        db.session.add(venue)
+        db.session.commit()
+        # on successful db insert, flash success
+        flash(f"Venue {data['name']} was successfully listed!")
+        return render_template('pages/home.html')
+    except Exception as e:
+        print(e)
+        db.session.rollback()
+        flash(f"An error occurred. Venue {data['name']} could not be listed.")
+    finally:
+        db.session.close()
 
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
@@ -255,7 +261,7 @@ def delete_venue(venue_id):
 def artists():
     data = Artist.query.all()
     for artist in data:
-        set_genres_as_list(artist)
+        set_artist_genres_as_list(artist)
     return render_template('pages/artists.html', artists=data)
 
 
@@ -280,7 +286,7 @@ def search_artists():
 def show_artist(artist_id):
     # shows the artist page with the given artist_id
     data = Artist.query.filter(Artist.id == artist_id).first()
-    set_genres_as_list(data)
+    set_artist_genres_as_list(data)
     return render_template('pages/show_artist.html', artist=data)
 
 
@@ -290,7 +296,7 @@ def show_artist(artist_id):
 def edit_artist(artist_id):
     form = ArtistForm(request.form)
     artist = Artist.query.filter(Artist.id == artist_id).first()
-    set_genres_as_list(artist)
+    set_artist_genres_as_list(artist)
     form.name.data = artist.name
     form.city.data = artist.city
     form.state.data = artist.state
@@ -465,8 +471,29 @@ def get_form_artist(data) -> Artist:
     return artist
 
 
-def set_genres_as_list(artist: Artist):
+def get_form_venue(data) -> Venue:
+    venue = Venue(
+        name=data['name'],
+        city=data['city'],
+        state=data['state'],
+        address=data['address'],
+        phone=data['phone'],
+        genres=','.join(data.getlist('genres')),
+        image_link=data['image_link'],
+        facebook_link=data['facebook_link'],
+        seeking_talent=True if 'seeking_talent' in data else False,
+        website=data['website'] if 'website' in data else None,
+        seeking_description=data['seeking_description'] if 'seeking_description' in data else None,
+    )
+    return venue
+
+
+def set_artist_genres_as_list(artist: Artist):
     artist.genres = artist.genres.split(',')
+
+
+def set_venue_genres_as_list(venue: Venue):
+    venue.genres = venue.genres.split(',')
 
 
 @app.errorhandler(404)

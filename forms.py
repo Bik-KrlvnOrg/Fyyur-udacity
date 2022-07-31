@@ -86,13 +86,12 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        'phone', validators=[DataRequired(), Regexp(r'^[0-9\-\+]+$')]
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[DataRequired(), URL()]
     )
     genres = SelectMultipleField(
-        # TODO implement enum restriction
         'genres', validators=[DataRequired()],
         choices=[
             ('Alternative', 'Alternative'),
@@ -120,7 +119,7 @@ class VenueForm(Form):
         'facebook_link', validators=[URL()]
     )
     website_link = StringField(
-        'website_link'
+        'website_link', validators=[URL()]
     )
 
     seeking_talent = BooleanField('seeking_talent')
