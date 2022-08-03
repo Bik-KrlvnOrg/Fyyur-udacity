@@ -440,6 +440,8 @@ def set_artist_genres_as_list(artist: Artist):
 
 
 def set_venue_genres_as_list(venue: Venue):
+    if venue is None:
+        return
     venue.genres = venue.genres.split(',')
 
 
@@ -451,6 +453,8 @@ def set_show_venue(show_list: List[Show]):
 
 
 def set_show_artist(show_list: List[Show]):
+    if show_list is None:
+        return
     for show in show_list:
         show.artist_id = show.artist.id
         show.artist_name = show.artist.name
