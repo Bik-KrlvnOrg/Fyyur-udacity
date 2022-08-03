@@ -8,9 +8,6 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 DEBUG = True
 
 # Connect to the database
-
-
-# TODO IMPLEMENT DATABASE URL
 DATABASE_HOST = os.getenv('DATABASE_HOST')
 DATABASE_USER = os.getenv('DATABASE_USER')
 DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
