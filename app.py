@@ -1,5 +1,6 @@
 import logging
 from logging import Formatter, FileHandler
+from typing import List
 
 import babel
 import dateutil.parser
@@ -140,8 +141,18 @@ def get_search_term(form):
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
-    data = Venue.query.filter(Venue.id == venue_id).first()
+    data = find_venue_by_id(venue_id)
     set_venue_genres_as_list(data)
+    show_list = data.shows
+    past_shows = list(filter(lambda show: show.start_time < datetime.now(), show_list))
+    upcoming_shows = list(filter(lambda show: show.start_time > datetime.now(), show_list))
+    data.past_shows = past_shows
+    data.upcoming_shows = upcoming_shows
+    data.past_shows_count = len(past_shows)
+    data.upcoming_shows_count = len(upcoming_shows)
+
+    set_show_artist(past_shows)
+    set_show_artist(upcoming_shows)
     return render_template('pages/show_venue.html', venue=data)
 
 
@@ -212,8 +223,18 @@ def search_artists():
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
     # shows the artist page with the given artist_id
-    data = Artist.query.filter(Artist.id == artist_id).first()
+    data = find_artist_by_id(artist_id)
     set_artist_genres_as_list(data)
+    show_list = data.shows
+    past_shows = list(filter(lambda show: show.start_time < datetime.now(), show_list))
+    upcoming_shows = list(filter(lambda show: show.start_time > datetime.now(), show_list))
+    data.past_shows = past_shows
+    data.upcoming_shows = upcoming_shows
+    data.past_shows_count = len(past_shows)
+    data.upcoming_shows_count = len(upcoming_shows)
+
+    set_show_venue(past_shows)
+    set_show_venue(upcoming_shows)
     return render_template('pages/show_artist.html', artist=data)
 
 
@@ -222,7 +243,7 @@ def show_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
     form = ArtistForm(request.form)
-    artist = Artist.query.filter(Artist.id == artist_id).first()
+    artist = find_artist_by_id(artist_id)
     set_artist_genres_as_list(artist)
     form.name.data = artist.name
     form.city.data = artist.city
@@ -261,7 +282,7 @@ def edit_artist_submission(artist_id):
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
     form = VenueForm(request.form)
-    venue = Venue.query.filter(Venue.id == venue_id).first()
+    venue = find_venue_by_id(venue_id)
     set_artist_genres_as_list(venue)
     form.name.data = venue.name
     form.city.data = venue.city
@@ -420,6 +441,29 @@ def set_artist_genres_as_list(artist: Artist):
 
 def set_venue_genres_as_list(venue: Venue):
     venue.genres = venue.genres.split(',')
+
+
+def set_show_venue(show_list: List[Show]):
+    for show in show_list:
+        show.venue_image_link = show.venue.image_link
+        show.venue_name = show.venue.name
+        show.start_time = str(show.start_time)
+
+
+def set_show_artist(show_list: List[Show]):
+    for show in show_list:
+        show.artist_id = show.artist.id
+        show.artist_name = show.artist.name
+        show.artist_image_link = show.artist.image_link
+        show.start_time = str(show.start_time)
+
+
+def find_artist_by_id(artist_id):
+    return Artist.query.filter(Artist.id == artist_id).first()
+
+
+def find_venue_by_id(venue_id):
+    return Venue.query.filter(Venue.id == venue_id).first()
 
 
 @app.errorhandler(404)
